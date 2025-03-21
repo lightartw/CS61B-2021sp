@@ -110,10 +110,15 @@ public class Model extends Observable {
         boolean changed;
         changed = false;
 
-        // TODO: Modify this.board (and perhaps this.score) to account
+        board.setViewingPerspective(side);
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
+        for(int i = 0;i < board.size();i++) {
+            for(int j = 0;j < board.size();j++) {
 
+            }
+        }
+        board.setViewingPerspective(Side.NORTH);
         checkGameOver();
         if (changed) {
             setChanged();
@@ -137,7 +142,13 @@ public class Model extends Observable {
      *  Empty spaces are stored as null.
      * */
     public static boolean emptySpaceExists(Board b) {
-        // TODO: Fill in this function.
+        int size = b.size();
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if(b.tile(i,j) == null)
+                    return true;
+            }
+        }
         return false;
     }
 
@@ -147,7 +158,13 @@ public class Model extends Observable {
      * given a Tile object t, we get its value with t.value().
      */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
+        int size = b.size();
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if(b.tile(i,j) != null && b.tile(i,j).value() == MAX_PIECE)
+                    return true;
+            }
+        }
         return false;
     }
 
@@ -157,8 +174,29 @@ public class Model extends Observable {
      * 1. There is at least one empty space on the board.
      * 2. There are two adjacent tiles with the same value.
      */
+    public static boolean isValid(int size,int i,int j) {
+        return i >= 0 && i < size && j >= 0 && j < size;
+    }
     public static boolean atLeastOneMoveExists(Board b) {
-        // TODO: Fill in this function.
+        //empty space
+        if(emptySpaceExists(b))
+            return true;
+        //two adjacent tiles with the same value
+        int size = b.size();
+        int[][] vector = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                //检查相邻
+                for (int[] ints : vector) {
+                    int ni = i + ints[0];
+                    int nj = j + ints[1];
+                    if (isValid(size, ni, nj)){
+                        if (b.tile(ni, nj).value() == b.tile(i, j).value())
+                            return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
