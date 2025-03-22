@@ -106,6 +106,12 @@ public class Model extends Observable {
      *    value, then the leading two tiles in the direction of motion merge,
      *    and the trailing tile does not.
      * */
+    public boolean NorthChange(int i, int j){
+        Tile cur = tile(i, j);
+
+        return false;
+    }
+
     public boolean tilt(Side side) {
         boolean changed;
         changed = false;
@@ -114,8 +120,10 @@ public class Model extends Observable {
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
         for(int i = 0;i < board.size();i++) {
-            for(int j = 0;j < board.size();j++) {
-
+            //循环每一列,从上到下检查
+            for(int j = board.size()-1;j >= 0;j--) {
+                boolean is_changed = NorthChange(i,j);
+                if(is_changed) changed = true;
             }
         }
         board.setViewingPerspective(Side.NORTH);
