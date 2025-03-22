@@ -111,8 +111,8 @@ public class Model extends Observable {
         Tile cur = board.tile(col, row);
         int move_row = -1;
         int merge_row = -1;
+        //检查，确定move还是merge,以及移动的坐标(直接使用board的move即可实现)
         for(int i = row+1; i < size(); i++){
-            //检查，确定move还是merge,以及移动的坐标(直接使用board的move即可实现)
             if(board.tile(col, i) == null){
                 move_row = i;
                 changed = true;
@@ -128,9 +128,9 @@ public class Model extends Observable {
             changed_row[merge_row] = 1;
             board.move(col,merge_row,cur);
         }
-        else if(move_row >= 0){
+        else if(move_row >= 0)
             board.move(col,move_row,cur);
-        }
+
         return changed;
     }
 
