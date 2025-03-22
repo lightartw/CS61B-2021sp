@@ -106,10 +106,32 @@ public class Model extends Observable {
      *    value, then the leading two tiles in the direction of motion merge,
      *    and the trailing tile does not.
      * */
-    public boolean NorthChange(int i, int j){
-        Tile cur = tile(i, j);
+    public boolean NorthChange(int col, int row,int[] changed_row){
+        boolean changed = false;
+        Tile cur = board.tile(col, row);
+        int move_row = -1;
+        int merge_row = -1;
+        for(int i = row+1; i < size(); i++){
+            //检查，确定move还是merge,以及移动的坐标(直接使用board的move即可实现)
+            if(board.tile(col, i) == null){
+                move_row = i;
+                changed = true;
+            }
+            else if(board.tile(col, i).value() == cur.value() && changed_row[i] == 0){
+                merge_row = i;
+                changed = true;
+            }
+        }
 
-        return false;
+        if(merge_row >= 0){
+            this.score += cur.value()*2;
+            changed_row[merge_row] = 1;
+            board.move(col,merge_row,cur);
+        }
+        else if(move_row >= 0){
+            board.move(col,move_row,cur);
+        }
+        return changed;
     }
 
     public boolean tilt(Side side) {
@@ -117,16 +139,17 @@ public class Model extends Observable {
         changed = false;
 
         board.setViewingPerspective(side);
-        // for the tilt to the Side SIDE. If the board changed, set the
-        // changed local variable to true.
         for(int i = 0;i < board.size();i++) {
             //循环每一列,从上到下检查
+            int[] changed_row = new int[board.size()];
             for(int j = board.size()-1;j >= 0;j--) {
-                boolean is_changed = NorthChange(i,j);
+                if(tile(i,j) == null) continue;   //跳过空格
+                boolean is_changed = NorthChange(i,j,changed_row);
                 if(is_changed) changed = true;
             }
         }
         board.setViewingPerspective(Side.NORTH);
+
         checkGameOver();
         if (changed) {
             setChanged();
