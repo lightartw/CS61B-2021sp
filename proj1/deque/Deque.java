@@ -1,4 +1,4 @@
 package deque;
 
-public class Deque {
+public interface Deque<T> {
 }
