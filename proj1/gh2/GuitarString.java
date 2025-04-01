@@ -3,9 +3,6 @@ package gh2;
 import deque.Deque;
 import deque.LinkedListDeque;
 
-import java.util.LinkedList;
-// TODO: maybe more imports
-
 //Note: This file will not compile until you complete the Deque implementations
 public class GuitarString {
     /** Constants. Do not change. In case you're curious, the keyword final
@@ -19,10 +16,11 @@ public class GuitarString {
     int capacity;
     /* Create a guitar string of the given frequency.  */
     public GuitarString(double frequency) {
-        capacity = (int) Math.round(SR/frequency);
+        capacity = (int) Math.round(SR / frequency);
         buffer = new LinkedListDeque<Double>();
-        for (int i = 0; i < capacity; i++)
+        for (int i = 0; i < capacity; i++) {
             buffer.addFirst(0.0);
+        }
     }
 
 
@@ -41,7 +39,7 @@ public class GuitarString {
      * the Karplus-Strong algorithm.
      */
     public void tic() {
-        double newDouble = DECAY*0.5*(buffer.get(0)+buffer.get(1));
+        double newDouble = DECAY * 0.5 * (buffer.get(0) + buffer.get(1));
         buffer.removeFirst();
         buffer.addLast(newDouble);
     }
