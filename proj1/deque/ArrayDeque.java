@@ -72,7 +72,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
         front = (front + 1) % items.length;
         size--;
 
-        if (items.length >= 16 && size > 0 && size == items.length / 4){
+        if (items.length >= 16 && size > 0 && size == items.length / 4) {
             resize(items.length / 2);
         }
         return item;
@@ -96,7 +96,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
 
     @Override
     public T get(int index) {
-        if(index < 0 || index >= size) {
+        if (index < 0 || index >= size) {
             return null;
         }
 
@@ -112,7 +112,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     private class ArrayDequeIterator implements Iterator<T> {
         int pos;
 
-        public ArrayDequeIterator() {
+        ArrayDequeIterator() {
             pos = 0;
         }
 
@@ -123,7 +123,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
 
         @Override
         public T next() {
-            if(!hasNext()) {
+            if (!hasNext()) {
                 return null;
             }
             int index = (front + pos) % items.length;

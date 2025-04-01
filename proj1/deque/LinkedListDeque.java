@@ -118,7 +118,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     private class LinkedListDequeIterator implements Iterator<T> {
         private int pos;
 
-        public LinkedListDequeIterator() {
+        LinkedListDequeIterator() {
             pos = 0;
         }
 
