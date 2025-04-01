@@ -13,7 +13,7 @@ public class GuitarString {
 
     /* Buffer for storing sound data. */
     private Deque<Double> buffer;
-    int capacity;
+    private int capacity;
     /* Create a guitar string of the given frequency.  */
     public GuitarString(double frequency) {
         capacity = (int) Math.round(SR / frequency);

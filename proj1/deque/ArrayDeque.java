@@ -19,8 +19,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
         T[] a = (T[]) new Object[capacity];
         if (front < back) {
             System.arraycopy(items, front, a, 0, size);
-        }
-        else {
+        } else {
             int interval = items.length - front;
             System.arraycopy(items, front, a, 0, interval);
             System.arraycopy(items, 0, a, interval, back);
@@ -65,20 +64,25 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
 
     @Override
     public T removeFirst() {
-        if (size == 0) return null;
+        if (size == 0) {
+            return null;
+        }
 
         T item = items[front];
         front = (front + 1) % items.length;
         size--;
 
-        if (items.length >= 16 && size > 0 && size == items.length / 4)
+        if (items.length >= 16 && size > 0 && size == items.length / 4){
             resize(items.length / 2);
+        }
         return item;
     }
 
     @Override
     public T removeLast() {
-        if (size == 0) return null;
+        if (size == 0) {
+            return null;
+        }
 
         back = (back - 1 + items.length) % items.length;
         T item = items[back];
@@ -92,7 +96,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
 
     @Override
     public T get(int index) {
-        if(index < 0 || index >= size){
+        if(index < 0 || index >= size) {
             return null;
         }
 
@@ -105,8 +109,9 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
         return new ArrayDequeIterator();
     }
 
-    private class ArrayDequeIterator implements Iterator<T>{
+    private class ArrayDequeIterator implements Iterator<T> {
         int pos;
+
         public ArrayDequeIterator() {
             pos = 0;
         }
@@ -128,21 +133,21 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     }
 
     public boolean equals(Object o) {
-        if(o == this) {
+        if (o == this) {
             return true;
         }
-        if(o == null) {
+        if (o == null) {
             return false;
         }
-        if(!(o instanceof Deque)) {
+        if (!(o instanceof Deque)) {
             return false;
         }
         Deque<T> other = (Deque<T>) o;
-        if(size != other.size()) {
+        if (size != other.size()) {
             return false;
         }
-        for(int i = 0; i < size; i++) {
-            if(!items[i].equals(other.get(i))) {
+        for (int i = 0; i < size; i++) {
+            if (!items[i].equals(other.get(i))) {
                 return false;
             }
         }
