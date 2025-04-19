@@ -7,8 +7,8 @@ import java.util.Set;
 
 public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
-    int size;
-    Node root;
+    private int size;
+    private Node root;
 
     private class Node {
         K key;
@@ -20,11 +20,6 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
             this.key = key;
             this.value = value;
         }
-    }
-
-    public BSTMap(K key, V value) {
-        this.root = new Node(key, value);
-        size = 1;
     }
 
     public BSTMap() {
