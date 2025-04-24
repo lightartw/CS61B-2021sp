@@ -28,32 +28,19 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     private HashSet<K> keySet;
 
     public MyHashMap() {
-        this.initialSize = 16;
-        this.size = 0;
-        this.loadFactor = 0.75;
-        buckets = createTable(initialSize);
-
-        for (int i = 0; i < initialSize; i++) {
-            buckets[i] = createBucket();
-        }
+        this(16, 0.75);
     }
 
     public MyHashMap(int initialSize) {
-        this.initialSize = initialSize;
-        this.size = 0;
-        this.loadFactor = 0.75;
-        buckets = createTable(initialSize);
-
-        for (int i = 0; i < initialSize; i++) {
-            buckets[i] = createBucket();
-        }
+        this(initialSize, 0.75);
     }
 
     public MyHashMap(int initialSize, double maxLoad) {
         this.initialSize = initialSize;
         this.size = 0;
         this.loadFactor = maxLoad;
-        buckets = createTable(initialSize);
+        this.keySet = new HashSet<>();
+        this.buckets = createTable(initialSize);
 
         for (int i = 0; i < initialSize; i++) {
             buckets[i] = createBucket();
@@ -161,17 +148,18 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         }
 
         buckets[hash].add(createNode(key, value));
+        keySet.add(key);
         size++;
     }
 
     @Override
     public Set<K> keySet(){
-        throw new UnsupportedOperationException();
+        return keySet;
     }
 
     @Override
     public Iterator<K> iterator() {
-        throw new UnsupportedOperationException();
+        return keySet.iterator();
     }
 
     @Override
