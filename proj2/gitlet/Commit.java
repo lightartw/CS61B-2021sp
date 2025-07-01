@@ -1,9 +1,10 @@
 package gitlet;
 
+import java.io.File;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+
+import static gitlet.Utils.join;
 
 /** Represents a gitlet commit object.
  *  TODO: It's a good idea to give a description here of what else this Class
@@ -19,14 +20,54 @@ public class Commit implements Serializable {
     /** if it has merge */
     private String secParentCommit;
     /** All the file it stores. */
-    private List<Blob> bolbs;
+    private Map<String, String> blobs;
 
     /** Creat a init commit */
-    public Commit() {
-        message = "initialCommit";
-        timestamp = new Date();
-        parentCommit = null;
-        secParentCommit = null;
-        bolbs = null;
+    public Commit(String message, Date timestamp, String parentCommit, String secParentCommit, Map<String, String> blobs) {
+        this.message = message;
+        this.timestamp = timestamp;
+        this.blobs = new HashMap<>(blobs);
+        this.parentCommit = parentCommit;
+        this.secParentCommit = secParentCommit;
+    }
+
+    public Commit(Commit commit) {
+        this.message = commit.message;
+        this.timestamp = commit.timestamp;
+        this.parentCommit = commit.parentCommit;
+        this.secParentCommit = commit.secParentCommit;
+        this.blobs = commit.getBlobs();
+    }
+
+    public void update(StagingArea stagingArea) {
+        Map<String, String> addition = stagingArea.getAddition();
+        blobs.putAll(addition);
+
+        Set<String> removal = stagingArea.getRemoval();
+        for (String key : removal) {
+            blobs.remove(key);
+        }
+    }
+
+    public Map<String, String> getBlobs() {
+        return new HashMap<>(blobs);
+    }
+
+    public void setTimestamp(Date timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setParentCommit(String parentCommit) {
+        this.parentCommit = parentCommit;
+    }
+
+    public Commit getParent() {
+        if (parentCommit == null) return null;
+        File parentFile = join(Repository.COMMIT_DIR, parentCommit);
+        return Utils.readObject(parentFile, Commit.class);
     }
 }

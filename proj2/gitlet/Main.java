@@ -25,6 +25,8 @@ public class Main {
                Repository.add(args[1]);
                break;
             case "commit":
+                validateNumArgs("commit", args, 2);
+                Repository.commit(args[1]);
                 break;
             case "rm":
                 break;
@@ -38,7 +40,13 @@ public class Main {
     }
 
     public static void validateNumArgs(String cmd, String[] args, int n) {
-        if (args.length != n) {
+        if (cmd.equals("commit")) {
+            if (args.length != 2) {
+                System.err.println("Please enter a commit message.");
+                System.exit(0);
+            }
+        }
+        else if (args.length != n) {
             System.err.println("Incorrect operands");
             System.exit(0);
         }
