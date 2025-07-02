@@ -88,7 +88,7 @@ public class Commit implements Serializable {
         return message;
     }
     public String getHash() {
-        return Utils.sha1(this);
+        return Utils.sha1((Object) Utils.serialize(this));
     }
     public Commit getParent() {
         if (parentCommit == null) return null;

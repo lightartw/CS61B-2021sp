@@ -42,7 +42,7 @@ public class Repository {
         BLOB_DIR.mkdirs();
         // 创建初始提交
         Commit initCommit = new Commit("initial commit", new Date(0), null, null, new HashMap<>());
-        String commitHash = Utils.sha1(initCommit);
+        String commitHash = Utils.sha1((Object) Utils.serialize(initCommit));
         File commitFile = join(COMMIT_DIR, commitHash);
         Utils.writeObject(commitFile, initCommit);
         // 创建master分支，指向初始提交
@@ -94,7 +94,7 @@ public class Repository {
         }
         //创建newCommit，设置parentCommit
         Commit currentCommit = getCurrentCommit();
-        String currentHash = Utils.sha1(currentCommit);
+        String currentHash = Utils.sha1((Object) Utils.serialize(currentCommit));
         Commit newCommit = new Commit(currentCommit);
         newCommit.setParentCommit(currentHash);
         newCommit.setMessage(message);
@@ -105,7 +105,7 @@ public class Repository {
         //修改HEAD Branch的commit
         String currentBranch = getCurrentBranch();
         File branchFile = join(BRANCH_DIR, currentBranch);
-        String commitHash = Utils.sha1(newCommit);
+        String commitHash = Utils.sha1((Object) Utils.serialize(newCommit));
         Utils.writeContents(branchFile, commitHash);
         //写入commits文件
         File commitFile = join(COMMIT_DIR, commitHash);
