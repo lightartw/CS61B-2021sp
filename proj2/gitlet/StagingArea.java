@@ -10,6 +10,10 @@ public class StagingArea implements Serializable {
     private HashMap<String, String> addition;  // 文件名-->blobHash
     private HashSet<String> removal;     //待删除文件名
 
+    public StagingArea() {
+        addition = new HashMap<>();
+        removal = new HashSet<>();
+    }
 
     public Map<String, String>  getAddition() {
         return addition;
@@ -18,7 +22,11 @@ public class StagingArea implements Serializable {
         return removal;
     }
 
-    public void addFile(String fileName, String blobHash) {
+    public void stageForAddition(String fileName, String blobHash) {
         addition.put(fileName, blobHash);
+    }
+
+    public void stageForRemoval(String fileName) {
+        removal.add(fileName);
     }
 }

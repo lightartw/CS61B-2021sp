@@ -2,6 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static gitlet.Utils.join;
@@ -36,7 +37,7 @@ public class Commit implements Serializable {
         this.timestamp = commit.timestamp;
         this.parentCommit = commit.parentCommit;
         this.secParentCommit = commit.secParentCommit;
-        this.blobs = commit.getBlobs();
+        this.blobs = new HashMap<>(commit.blobs);
     }
 
     public void update(StagingArea stagingArea) {
@@ -49,25 +50,54 @@ public class Commit implements Serializable {
         }
     }
 
-    public Map<String, String> getBlobs() {
-        return new HashMap<>(blobs);
+    public String getFormattedTimestamp() {
+        SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
+        return "Date: " + formatter.format(timestamp);
     }
 
+    @Override
+    public String toString() {
+        if (this.secParentCommit == null) {
+            return "===\n" +
+                    "commit " + getHash() + "\n" +
+                    getFormattedTimestamp() + "\n" +
+                    message + "\n";
+        }
+
+        return  "===\n" +
+                "commit " + getHash() + "\n" +
+                "Merge: "  + parentCommit.substring(0,7) + " " + secParentCommit.substring(0,7) +"\n" +
+                getFormattedTimestamp() + "\n" +
+                message + "\n";
+    }
+
+    public Map<String, String> getBlobs() {
+        return blobs;
+    }
     public void setTimestamp(Date timestamp) {
         this.timestamp = timestamp;
     }
-
     public void setMessage(String message) {
         this.message = message;
     }
-
     public void setParentCommit(String parentCommit) {
         this.parentCommit = parentCommit;
     }
 
+    public String getMessage() {
+        return message;
+    }
+    public String getHash() {
+        return Utils.sha1(this);
+    }
     public Commit getParent() {
         if (parentCommit == null) return null;
         File parentFile = join(Repository.COMMIT_DIR, parentCommit);
+        return Utils.readObject(parentFile, Commit.class);
+    }
+    public Commit getSecParent() {
+        if (secParentCommit == null) return null;
+        File parentFile = join(Repository.COMMIT_DIR, secParentCommit);
         return Utils.readObject(parentFile, Commit.class);
     }
 }
