@@ -9,8 +9,8 @@ public class Main {
      *  <COMMAND> <OPERAND1> <OPERAND2> ... 
      */
     public static void main(String[] args) {
-        //调试
-        args = new String[]{"init"};
+
+        args = new String[]{"log"};
 
         if (args.length == 0) {
             System.out.println("Please enter a command.");
@@ -55,6 +55,21 @@ public class Main {
                 validateNumArgs("checkout", args, 0);
                 Repository.checkout(args);
                 break;
+            case "branch":
+                validateNumArgs("branch", args, 2);
+                Repository.branch(args[1]);
+                break;
+            case "rm-branch":
+                validateNumArgs("rm-branch", args, 2);
+                Repository.rmBranch(args[1]);
+                break;
+            case "reset":
+                validateNumArgs("reset", args, 2);
+                Repository.reset(args[1]);
+                break;
+            case "merge":
+                validateNumArgs("merge", args, 2);
+                Repository.merge(args[1]);
             default:
                 System.out.println("No command with that name exists.");
                 System.exit(0);

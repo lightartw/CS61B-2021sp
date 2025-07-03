@@ -27,17 +27,9 @@ public class Commit implements Serializable {
     public Commit(String message, Date timestamp, String parentCommit, String secParentCommit, Map<String, String> blobs) {
         this.message = message;
         this.timestamp = timestamp;
-        this.blobs = new HashMap<>(blobs);
+        this.blobs = blobs;
         this.parentCommit = parentCommit;
         this.secParentCommit = secParentCommit;
-    }
-
-    public Commit(Commit commit) {
-        this.message = commit.message;
-        this.timestamp = commit.timestamp;
-        this.parentCommit = commit.parentCommit;
-        this.secParentCommit = commit.secParentCommit;
-        this.blobs = new HashMap<>(commit.blobs);
     }
 
     public void update(StagingArea stagingArea) {
@@ -73,15 +65,6 @@ public class Commit implements Serializable {
 
     public Map<String, String> getBlobs() {
         return blobs;
-    }
-    public void setTimestamp(Date timestamp) {
-        this.timestamp = timestamp;
-    }
-    public void setMessage(String message) {
-        this.message = message;
-    }
-    public void setParentCommit(String parentCommit) {
-        this.parentCommit = parentCommit;
     }
 
     public String getMessage() {

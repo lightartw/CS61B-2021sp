@@ -94,12 +94,9 @@ public class Repository {
         }
         //创建newCommit，设置parentCommit
         Commit currentCommit = getCurrentCommit();
-        String currentHash = Utils.sha1((Object) Utils.serialize(currentCommit));
-        Commit newCommit = new Commit(currentCommit);
-        newCommit.setParentCommit(currentHash);
-        newCommit.setMessage(message);
-        newCommit.setTimestamp(new Date());
-        //TODO 日期应该输入实际时间
+        String currentHash = currentCommit.getHash();
+        Map<String, String> blobs = currentCommit.getBlobs();
+        Commit newCommit = new Commit(message, new Date(), currentHash, null, new HashMap<>(blobs));
         //update infos
         newCommit.update(stagingArea);
         //修改HEAD Branch的commit
@@ -244,13 +241,13 @@ public class Repository {
         else if (args.length == 4){
             String commitId = args[1];
             String commitHash = findFullCommitId(commitId);
-            String fileName = args[3];
-            File commitFile = join(COMMIT_DIR, commitHash);
-            // ERROR
-            if (!commitFile.exists()) {
+            if (commitHash == null) {
                 System.out.println("No commit with that id exists.");
                 return;
             }
+            String fileName = args[3];
+            File commitFile = join(COMMIT_DIR, commitHash);
+            // ERROR
             Commit commit = Utils.readObject(commitFile, Commit.class);
             Map<String, String> blobs = commit.getBlobs();
             if (!blobs.containsKey(fileName)) {
@@ -281,9 +278,128 @@ public class Repository {
         checkUntrackedFiles(commit);
         updateWorkingDirectory(commit);
         //切换HEAD
-        Utils.writeContents(HEAD_FILE, branchFile);
+        Utils.writeContents(HEAD_FILE, branchName);
         //清空stagingArea
         Utils.writeObject(INDEX_FILE, new StagingArea());
+    }
+
+    public static void branch(String branchName) {
+        isInitialized();
+
+        File branchFile = join(BRANCH_DIR, branchName);
+        if (branchFile.exists()) {
+            System.out.println("A branch with that name already exists.");
+            return;
+        }
+        Commit currentCommit = getCurrentCommit();
+        Utils.writeContents(branchFile, currentCommit.getBlobs());
+    }
+
+    public static void rmBranch(String branchName) {
+        isInitialized();
+
+        File branchFile = join(BRANCH_DIR, branchName);
+        if (!branchFile.exists()) {
+            System.out.println("A branch with that name does not exist.");
+            return;
+        }
+        if (branchName.equals(getCurrentBranch())) {
+            System.out.println("Cannot remove the current branch.");
+            return;
+        }
+        //删除
+        Utils.restrictedDelete(branchFile);
+    }
+
+    public static void reset(String commitId) {
+        isInitialized();
+
+        String commitHash = findFullCommitId(commitId);
+        if (commitHash == null) {
+            System.out.println("No commit with that id exists.");
+            return;
+        }
+        File commitFile = join(COMMIT_DIR, commitHash);
+        Commit commit = Utils.readObject(commitFile, Commit.class);
+        checkUntrackedFiles(commit);
+        updateWorkingDirectory(commit);
+        //更新，注意与checkoutBranch的区别
+        String currentBranch = getCurrentBranch();
+        File currentBranchFile = join(BRANCH_DIR, currentBranch);
+        Utils.writeContents(currentBranchFile, commitHash);
+        //清空StagingArea
+        Utils.writeObject(INDEX_FILE, new StagingArea());
+    }
+
+    public static void merge(String branchName) {
+        isInitialized();
+        /* ERROR MESSAGE */
+        StagingArea stagingArea = Utils.readObject(INDEX_FILE, StagingArea.class);
+        if (!stagingArea.getAddition().isEmpty() || !stagingArea.getRemoval().isEmpty()) {
+            System.out.println("You have uncommitted changes.");
+            System.exit(0);
+        }
+        File branchFile = join(BRANCH_DIR, branchName);
+        if (!branchFile.exists()) {
+            System.out.println("A branch with that name does not exist.");
+            return;
+        }
+        String currentBranch = getCurrentBranch();
+        if (branchName.equals(currentBranch)) {
+            System.out.println("Cannot merge a branch with itself.");
+            return;
+        }
+        String targetCommitHash = Utils.readContentsAsString(branchFile);
+        Commit targetCommit = Utils.readObject(join(COMMIT_DIR, targetCommitHash), Commit.class);
+        checkUntrackedFiles(targetCommit);
+        // 正式开始
+        Commit currentCommit = getCurrentCommit();
+        String currentCommitHash = currentCommit.getHash();
+        //找到分割点
+        String splitPointHash = findSplitPoint(currentCommit, targetCommit);
+        //情况1
+        if (splitPointHash.equals(targetCommitHash)) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            return;
+        }
+        //情况2--fast-forward
+        if (splitPointHash.equals(currentCommitHash)) {
+            //更新工作区
+            updateWorkingDirectory(targetCommit);
+            //移动当前分支,在当前分支写入目标提交的hash
+            File currentBranchFile = join(BRANCH_DIR, currentBranch);
+            Utils.writeContents(currentBranchFile, targetCommitHash);
+            //清空缓存区
+            Utils.writeObject(INDEX_FILE, new StagingArea());
+            System.out.println("Current branch fast-forwarded.");
+            return;
+        }
+        //情况3-正常merge
+
+    }
+    /** 辅助方法 */
+    public static String findSplitPoint(Commit currentCommit, Commit targetCommit) {
+        if (currentCommit == null || targetCommit == null) {
+            return null;
+        }
+        //使用集合记录currentCommit所有祖先
+        Set<String> ancestors = new HashSet<>();
+        Commit cur = currentCommit;
+        //遍历currentCommit
+        while (cur != null) {
+            ancestors.add(cur.getHash());
+            cur = cur.getParent();
+        }
+        //遍历targetCommit
+        cur = targetCommit;
+        while (cur != null) {
+            if (ancestors.contains(cur.getHash())) {
+                return cur.getHash();
+            }
+            cur = cur.getParent();
+        }
+        //未找到
+        return null;
     }
 
     public static void restoreToWorkingDirectory(String fileName, String blobHash) {
@@ -360,8 +476,7 @@ public class Repository {
             Utils.writeContents(workingFile, (Object) content);
         }
     }
-
-    // 工具方法
+    /** 工具方法 */
     public static void isInitialized() {
         if (!GITLET_DIR.exists()) {
             System.out.println("Not in an initialized Gitlet directory.");
