@@ -42,7 +42,7 @@ public class Repository {
         BLOB_DIR.mkdirs();
         // 创建初始提交
         Commit initCommit = new Commit("initial commit", new Date(0), null, null, new HashMap<>());
-        String commitHash = Utils.sha1((Object) Utils.serialize(initCommit));
+        String commitHash = initCommit.getHash();
         File commitFile = join(COMMIT_DIR, commitHash);
         Utils.writeObject(commitFile, initCommit);
         // 创建master分支，指向初始提交
@@ -65,7 +65,7 @@ public class Repository {
         String blobHash = Utils.sha1((Object) contents);
         File blobFile = join(BLOB_DIR, blobHash);
         if (!blobFile.exists()) {
-            Utils.writeContents(blobFile, blobHash);
+            Utils.writeContents(blobFile, contents);
         }
 
         StagingArea stagingArea = Utils.readObject(INDEX_FILE, StagingArea.class);
@@ -95,14 +95,15 @@ public class Repository {
         //创建newCommit，设置parentCommit
         Commit currentCommit = getCurrentCommit();
         String currentHash = currentCommit.getHash();
-        Map<String, String> blobs = currentCommit.getBlobs();
-        Commit newCommit = new Commit(message, new Date(), currentHash, mergedCommitHash, new HashMap<>(blobs));
+        Map<String, String> newBlobs = new HashMap<>(currentCommit.getBlobs());
         //update infos
-        newCommit.update(stagingArea);
+        updateBlobs(stagingArea, newBlobs);
+        //创建新commit
+        Commit newCommit = new Commit(message, new Date(), currentHash, mergedCommitHash, newBlobs);
         //修改HEAD Branch的commit
         String currentBranch = getCurrentBranch();
         File branchFile = join(BRANCH_DIR, currentBranch);
-        String commitHash = Utils.sha1((Object) Utils.serialize(newCommit));
+        String commitHash = newCommit.getHash();
         Utils.writeContents(branchFile, commitHash);
         //写入commits文件
         File commitFile = join(COMMIT_DIR, commitHash);
@@ -468,6 +469,17 @@ public class Repository {
     }
 
     /** 辅助方法 */
+    public static void updateBlobs(StagingArea stagingArea, Map<String, String> blobs) {
+        Map<String, String> addition = stagingArea.getAddition();
+        blobs.putAll(addition);
+
+        Set<String> removal = stagingArea.getRemoval();
+        for (String key : removal) {
+            blobs.remove(key);
+        }
+    }
+
+
     public static void handleConflict(String file, Map<String, String> currentBlobs, Map<String, String> targetBlobs) {
         //current分支的内容
         String currentContent = "";

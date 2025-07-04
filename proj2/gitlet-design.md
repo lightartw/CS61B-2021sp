@@ -1,6 +1,6 @@
 # Gitlet Design Document
 
-**Name**:Maom zeyi
+**Name**:wwww
 
 ## Classes and Data Structures
 

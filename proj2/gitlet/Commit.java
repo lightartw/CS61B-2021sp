@@ -22,6 +22,7 @@ public class Commit implements Serializable {
     private String secParentCommit;
     /** All the file it stores. */
     private Map<String, String> blobs;
+    private String hash;
 
     /** Creat a init commit */
     public Commit(String message, Date timestamp, String parentCommit, String secParentCommit, Map<String, String> blobs) {
@@ -30,15 +31,18 @@ public class Commit implements Serializable {
         this.blobs = blobs;
         this.parentCommit = parentCommit;
         this.secParentCommit = secParentCommit;
+        generateHash();
     }
 
-    public void update(StagingArea stagingArea) {
-        Map<String, String> addition = stagingArea.getAddition();
-        blobs.putAll(addition);
-
-        Set<String> removal = stagingArea.getRemoval();
-        for (String key : removal) {
-            blobs.remove(key);
+    private void generateHash() {
+        if (parentCommit == null) {
+            this.hash = Utils.sha1(message, timestamp.toString(), blobs.toString());
+        }
+        else if (secParentCommit == null) {
+            this.hash = Utils.sha1(message, timestamp.toString(), parentCommit, blobs.toString());
+        }
+        else {
+            this.hash = Utils.sha1(message, timestamp.toString(), parentCommit, secParentCommit, blobs.toString());
         }
     }
 
@@ -71,7 +75,7 @@ public class Commit implements Serializable {
         return message;
     }
     public String getHash() {
-        return Utils.sha1((Object) Utils.serialize(this));
+        return this.hash;
     }
     public Commit getParent() {
         if (parentCommit == null) return null;

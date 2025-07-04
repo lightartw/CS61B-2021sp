@@ -9,8 +9,6 @@ public class Main {
      *  <COMMAND> <OPERAND1> <OPERAND2> ... 
      */
     public static void main(String[] args) {
-
-        args = new String[]{"status"};
         if (args.length == 0) {
             System.out.println("Please enter a command.");
             System.exit(0);
