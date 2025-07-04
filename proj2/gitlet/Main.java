@@ -10,8 +10,7 @@ public class Main {
      */
     public static void main(String[] args) {
 
-        args = new String[]{"log"};
-
+        args = new String[]{"status"};
         if (args.length == 0) {
             System.out.println("Please enter a command.");
             System.exit(0);
@@ -29,7 +28,7 @@ public class Main {
                break;
             case "commit":
                 validateNumArgs("commit", args, 0);
-                Repository.commit(args[1]);
+                Repository.commit(args[1], null);
                 break;
             case "rm":
                 validateNumArgs("rm", args, 2);

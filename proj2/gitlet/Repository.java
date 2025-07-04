@@ -82,7 +82,7 @@ public class Repository {
         Utils.writeObject(INDEX_FILE, stagingArea);
     }
 
-    public static void commit(String message) {
+    public static void commit(String message, String mergedCommitHash) {
         isInitialized();
 
         StagingArea stagingArea = Utils.readObject(INDEX_FILE, StagingArea.class);
@@ -96,7 +96,7 @@ public class Repository {
         Commit currentCommit = getCurrentCommit();
         String currentHash = currentCommit.getHash();
         Map<String, String> blobs = currentCommit.getBlobs();
-        Commit newCommit = new Commit(message, new Date(), currentHash, null, new HashMap<>(blobs));
+        Commit newCommit = new Commit(message, new Date(), currentHash, mergedCommitHash, new HashMap<>(blobs));
         //update infos
         newCommit.update(stagingArea);
         //修改HEAD Branch的commit
@@ -375,9 +375,123 @@ public class Repository {
             return;
         }
         //情况3-正常merge
+        Commit splitPoint = Utils.readObject(join(COMMIT_DIR, splitPointHash), Commit.class);
+        //添加所有文件
+        Set<String> allFiles = new HashSet<>();
+        allFiles.addAll(splitPoint.getBlobs().keySet());
+        allFiles.addAll(targetCommit.getBlobs().keySet());
+        allFiles.addAll(currentCommit.getBlobs().keySet());
+        //获得各个blobs
+        Map<String, String> splitBlobs = splitPoint.getBlobs();
+        Map<String, String> targetBlobs = targetCommit.getBlobs();
+        Map<String, String> currentBlobs = currentCommit.getBlobs();
+        //对每个文件进行处理
+        boolean hasConflict = false;
+        for (String file : allFiles) {
+            if (splitBlobs.containsKey(file)) {
+                if (targetBlobs.containsKey(file) && currentBlobs.containsKey(file)) {
+                    //情况1
+                    if (splitBlobs.get(file).equals(currentBlobs.get(file))
+                    && !splitBlobs.get(file).equals(targetBlobs.get(file))) {
+                        //将文件写入工作目录
+                        String targetBlobHash = targetBlobs.get(file);
+                        byte[] targetContents = Utils.readContents(join(BLOB_DIR, targetBlobHash));
+                        Utils.writeContents(join(CWD, file), targetContents);
+                        //暂存
+                        add(file);
+                    }
+                    // 情况2: current修改了，target没修改 -> 什么都不做
+                    // 情况3: 两个分支修改成相同内容 -> 什么都不做
+                    /** Conflict!!! */
+                    else if (!splitBlobs.get(file).equals(currentBlobs.get(file))
+                    && !splitBlobs.get(file).equals(targetBlobs.get(file))
+                    && !currentBlobs.get(file).equals(targetBlobs.get(file))) {
+                        hasConflict = true;
+                        handleConflict(file, currentBlobs, targetBlobs);
+                    }
+                }
+                else if (!targetBlobs.containsKey(file) && currentBlobs.containsKey(file)) {
+                    //情况6：splitPoint存在，current存在，target不存在，且current中的没有变化->删除
+                    if (splitBlobs.get(file).equals(currentBlobs.get(file))) {
+                        rm(file);
+                    }
+                    /** Conflict!!! */
+                    else {
+                        hasConflict = true;
+                        handleConflict(file, currentBlobs, targetBlobs);
+                    }
+                }
+                //情况7：splitPoint存在，current不存在，target存在，且target中的没有变化：不变
+                else if (targetBlobs.containsKey(file) && !currentBlobs.containsKey(file)) {
+                    /** Conflict!!! */
+                    if (!splitBlobs.get(file).equals(targetBlobs.get(file))) {
+                        hasConflict = true;
+                        handleConflict(file, currentBlobs, targetBlobs);
+                    }
+                }
+            }
+            else {
+                //情况4：splitPoint中不存在，current中存在，target中不存在-> 不变
+                //情况5：splitPoint中不存在，current中不存在，target中存在-> checkout and stage
+                if (!currentBlobs.containsKey(file) && targetBlobs.containsKey(file)) {
+                    //将文件写入工作目录
+                    String targetBlobHash = targetBlobs.get(file);
+                    byte[] targetContents = Utils.readContents(join(BLOB_DIR, targetBlobHash));
+                    Utils.writeContents(join(CWD, file), targetContents);
+                    //暂存
+                    add(file);
+                }
+                /** Conflict!!! */
+                else if (currentBlobs.containsKey(file) && targetBlobs.containsKey(file)) {
+                    if (!currentBlobs.get(file).equals(targetBlobs.get(file))) {
+                        hasConflict = true;
+                        handleConflict(file, currentBlobs, targetBlobs);
+                    }
+                }
+            }
+        }
 
+        //收尾工作
+        if (hasConflict) {
+            System.out.println("Encountered a merge conflict.");
+        }
+        String message = "Merged " + branchName + " into" + targetCommitHash + ".";
+        commit(message, targetCommitHash);
     }
+
+    /** 报错信息 */
+    public static void isInitialized() {
+        if (!GITLET_DIR.exists()) {
+            System.out.println("Not in an initialized Gitlet directory.");
+            System.exit(0);
+        }
+    }
+
     /** 辅助方法 */
+    public static void handleConflict(String file, Map<String, String> currentBlobs, Map<String, String> targetBlobs) {
+        //current分支的内容
+        String currentContent = "";
+        if (currentBlobs.containsKey(file)) {
+            byte[] currentBytes = Utils.readContents(join(BLOB_DIR, currentBlobs.get(file)));
+            currentContent = new String(currentBytes);
+        }
+        //获得target分支的文件内容
+        String targetContent = "";
+        if (targetBlobs.containsKey(file)) {
+            byte[] targetBytes = Utils.readContents(join(BLOB_DIR, targetBlobs.get(file)));
+            targetContent = new String(targetBytes);
+        }
+        String conflictedContent = "<<<<<<< HEAD\n" +
+                                    currentContent +
+                                    "=======\n" +
+                                    targetContent +
+                                    ">>>>>>>\n";
+        //写入工作目录
+        Utils.writeContents(join(CWD, file), conflictedContent);
+        //stage the result
+        add(file);
+    }
+
     public static String findSplitPoint(Commit currentCommit, Commit targetCommit) {
         if (currentCommit == null || targetCommit == null) {
             return null;
@@ -477,13 +591,6 @@ public class Repository {
         }
     }
     /** 工具方法 */
-    public static void isInitialized() {
-        if (!GITLET_DIR.exists()) {
-            System.out.println("Not in an initialized Gitlet directory.");
-            System.exit(0);
-        }
-    }
-
     public static String getCurrentBranch() {
         return Utils.readContentsAsString(HEAD_FILE);
     }
