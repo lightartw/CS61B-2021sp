@@ -87,4 +87,10 @@ public class Commit implements Serializable {
         File parentFile = join(Repository.COMMIT_DIR, secParentCommit);
         return Utils.readObject(parentFile, Commit.class);
     }
+    public String getParentHash() {
+        return parentCommit;
+    }
+    public String getSecParentHash() {
+        return secParentCommit;
+    }
 }

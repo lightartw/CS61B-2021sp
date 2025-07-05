@@ -25,7 +25,8 @@ public class Main {
                Repository.add(args[1]);
                break;
             case "commit":
-                validateNumArgs("commit", args, 0);
+                validateNumArgs("commit", args, 2);
+                checkCommit(args);
                 Repository.commit(args[1], null);
                 break;
             case "rm":
@@ -49,7 +50,7 @@ public class Main {
                 Repository.status();
                 break;
             case "checkout":
-                validateNumArgs("checkout", args, 0);
+                checkCheckout(args);
                 Repository.checkout(args);
                 break;
             case "branch":
@@ -67,6 +68,7 @@ public class Main {
             case "merge":
                 validateNumArgs("merge", args, 2);
                 Repository.merge(args[1]);
+                break;
             default:
                 System.out.println("No command with that name exists.");
                 System.exit(0);
@@ -74,20 +76,30 @@ public class Main {
         }
     }
 
+    public static void checkCommit(String[] args) {
+        if (args[1].isEmpty()) {
+            System.err.println("Please enter a commit message.");
+            System.exit(0);
+        }
+    }
+
+    public static void checkCheckout(String[] args) {
+        if (args.length < 2 || args.length > 4) {
+            System.err.println("Incorrect operands.");
+            System.exit(0);
+        }
+        if (args.length == 3 && !args[1].equals("--")) {
+            System.err.println("Incorrect operands.");
+            System.exit(0);
+        }
+        else if (args.length == 4 && !args[2].equals("--")) {
+            System.err.println("Incorrect operands.");
+            System.exit(0);
+        }
+    }
+
     public static void validateNumArgs(String cmd, String[] args, int n) {
-        if (cmd.equals("commit")) {
-            if (args.length != 2) {
-                System.err.println("Please enter a commit message.");
-                System.exit(0);
-            }
-        }
-        else if (cmd.equals("checkout")) {
-            if (args.length < 2) {
-                System.err.println("Incorrect operands");
-                System.exit(0);
-            }
-        }
-        else if (args.length != n) {
+        if (args.length != n) {
             System.err.println("Incorrect operands");
             System.exit(0);
         }

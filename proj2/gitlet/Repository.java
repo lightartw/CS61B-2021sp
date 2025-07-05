@@ -72,6 +72,11 @@ public class Repository {
         Commit currentCommit = getCurrentCommit();
         String currentVersion = currentCommit.getBlobs().get(fileName);
 
+        //如果造removeArea中存在该文件，则从removeArea中删除
+        if (stagingArea.getRemoval().contains(fileName)) {
+            stagingArea.getRemoval().remove(fileName);
+        }
+
         if (blobHash.equals(currentVersion)) {
             stagingArea.getAddition().remove(fileName);
         }
@@ -218,6 +223,10 @@ public class Repository {
         System.out.println();
 
         //TODO Modifications Not Staged For Commit + Untracked Files
+        System.out.println("=== Modifications Not Staged For Commit ===");
+        System.out.println();
+        System.out.println("=== Untracked Files ===");
+        System.out.println();
     }
     /** Branch家族 */
     public static void checkout(String[] args) {
@@ -293,7 +302,7 @@ public class Repository {
             return;
         }
         Commit currentCommit = getCurrentCommit();
-        Utils.writeContents(branchFile, currentCommit.getBlobs());
+        Utils.writeContents(branchFile, currentCommit.getHash());
     }
 
     public static void rmBranch(String branchName) {
@@ -309,7 +318,7 @@ public class Repository {
             return;
         }
         //删除
-        Utils.restrictedDelete(branchFile);
+        branchFile.delete();
     }
 
     public static void reset(String commitId) {
@@ -456,7 +465,7 @@ public class Repository {
         if (hasConflict) {
             System.out.println("Encountered a merge conflict.");
         }
-        String message = "Merged " + branchName + " into" + targetCommitHash + ".";
+        String message = "Merged " + branchName + " into " + currentBranch + ".";
         commit(message, targetCommitHash);
     }
 
@@ -508,24 +517,45 @@ public class Repository {
         if (currentCommit == null || targetCommit == null) {
             return null;
         }
-        //使用集合记录currentCommit所有祖先
-        Set<String> ancestors = new HashSet<>();
-        Commit cur = currentCommit;
-        //遍历currentCommit
-        while (cur != null) {
-            ancestors.add(cur.getHash());
-            cur = cur.getParent();
-        }
-        //遍历targetCommit
-        cur = targetCommit;
-        while (cur != null) {
-            if (ancestors.contains(cur.getHash())) {
-                return cur.getHash();
+        
+        Map<String, Integer> currentDistance = getCommitDistance(currentCommit);
+        Map<String, Integer> targetDistance = getCommitDistance(targetCommit);
+        String splitPoint = null;
+        int minDistance = Integer.MAX_VALUE;
+        for (String commitHash : currentDistance.keySet()) {
+            if (targetDistance.containsKey(commitHash)) {
+                if (targetDistance.get(commitHash) < minDistance) {
+                    minDistance = targetDistance.get(commitHash);
+                    splitPoint = commitHash;
+                }
             }
-            cur = cur.getParent();
         }
-        //未找到
-        return null;
+        return splitPoint;
+    }
+
+    private static Map<String, Integer> getCommitDistance(Commit commit) {
+        Map<String, Integer> distanceMap = new HashMap<>();
+        Queue<String> queue = new LinkedList<>();
+        queue.add(commit.getHash());
+        distanceMap.put(commit.getHash(), 0);
+
+        while (!queue.isEmpty()) {
+            String currentCommitHash = queue.poll();
+            Commit currentCommit = Utils.readObject(join(COMMIT_DIR, currentCommitHash), Commit.class);
+            // 处理主父提交
+            String parentHash = currentCommit.getParentHash();
+            if (parentHash != null && !parentHash.isEmpty() && !distanceMap.containsKey(parentHash)) {
+                distanceMap.put(parentHash, distanceMap.get(currentCommitHash) + 1);
+                queue.add(parentHash);
+            }
+            //处理第二个提交
+            String secondParentHash = currentCommit.getSecParentHash();
+            if (secondParentHash != null && !secondParentHash.isEmpty() && !distanceMap.containsKey(secondParentHash)) {
+                distanceMap.put(secondParentHash, distanceMap.get(currentCommitHash) + 1);
+                queue.add(secondParentHash);
+            }
+        }
+        return distanceMap;
     }
 
     public static void restoreToWorkingDirectory(String fileName, String blobHash) {
